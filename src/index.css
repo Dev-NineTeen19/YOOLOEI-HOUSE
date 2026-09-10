@@ -1,0 +1,14 @@
+/* =====================================================
+   YOOLOEI HOUSE - Base Style Import
+   ดึง CSS เดิมของโปรเจกต์มาใช้งานหลัก
+===================================================== */
+@import "./styles/style.css";
+
+/* Reset Vite root container constraint */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
