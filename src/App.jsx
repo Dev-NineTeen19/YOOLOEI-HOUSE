@@ -11,8 +11,9 @@ function App() {
     seedInitialDormitoriesIfEmpty();
   }, []);
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ScrollToTop />
+
       <SiteSettingsProvider>
         <AuthProvider>
           <AppRoutes />
