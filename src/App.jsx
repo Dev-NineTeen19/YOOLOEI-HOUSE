@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BrowserRouter } from "react-router-dom";
+import { HashRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { SiteSettingsProvider } from "./context/SiteSettingsContext";
 import AppRoutes from "./routes/AppRoutes";
@@ -11,15 +11,14 @@ function App() {
     seedInitialDormitoriesIfEmpty();
   }, []);
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <HashRouter>
       <ScrollToTop />
-
       <SiteSettingsProvider>
         <AuthProvider>
           <AppRoutes />
         </AuthProvider>
       </SiteSettingsProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
