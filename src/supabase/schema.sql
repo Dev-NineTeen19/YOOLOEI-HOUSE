@@ -223,3 +223,14 @@ ALTER TABLE view_history DISABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
 ALTER TABLE locations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE room_types DISABLE ROW LEVEL SECURITY;
+
+-- =========================================================================
+-- CREATE STORAGE BUCKETS AUTOMATICALLY (สร้าง BUCKETS เก็บรูปภาพอัตโนมัติ)
+-- =========================================================================
+INSERT INTO storage.buckets (id, name, public) 
+VALUES 
+  ('avatars', 'avatars', true),
+  ('dormitories', 'dormitories', true),
+  ('rooms', 'rooms', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
