@@ -230,7 +230,7 @@ header{
             rgba(222,241,215,.80),
             rgba(255,255,255,0.4)
         ),
-        url("/images/dorm-1.jpg");
+        url("../images/dorm-1.jpg");
     background-size:cover;
     background-position:center;
 }

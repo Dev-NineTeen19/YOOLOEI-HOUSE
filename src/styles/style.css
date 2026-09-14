@@ -378,7 +378,7 @@ button:active:not(:disabled):not(.btn-fav-no-hover):not(.btn-no-hover),
     width:100%;
     height:560px;
 
-    background:url("/images/banner.jpg") center center/cover;
+    background:url("../images/banner.jpg") center center/cover;
 
 }
 

@@ -269,7 +269,7 @@ header{
             rgba(225,244,219,.80)
         ),
 
-        url("/images/login-bg.jpg");
+        url("../images/login-bg.jpg");
 
 
     background-size:cover;
@@ -746,7 +746,7 @@ header{
             rgba(117,163,107,.55)
         ),
 
-        url("/images/login-bg.jpg");
+        url("../images/login-bg.jpg");
 
 
     background-size:cover;
