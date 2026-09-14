@@ -5,6 +5,7 @@ import SearchableSelect from "../../components/common/SearchableSelect";
 import { getApprovedDormitories } from "../../services/dormitoryService";
 import { getLocations } from "../../services/locationService";
 import { getLatestReviews } from "../../services/reviewService";
+import { getImageUrl } from "../../utils/imageUtils";
 
 const FALLBACK_DORMS = [
   {
@@ -536,10 +537,10 @@ export default function HomePage() {
                 <div>
                   <div style={{ position: "relative", width: "100%", height: "120px", overflow: "hidden", background: "#f1f5f9" }}>
                     <img
-                      src={dorm.images && dorm.images[0] ? dorm.images[0] : "/images/dorm-1.jpg"}
+                      src={getImageUrl(dorm.images && dorm.images[0] ? dorm.images[0] : "images/dorm-1.jpg")}
                       alt={dorm.name}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      onError={(e) => { e.target.src = "/images/banner.jpg"; }}
+                      onError={(e) => { e.target.src = getImageUrl("images/banner.jpg"); }}
                     />
                   </div>
                   <div style={{ padding: "12px 14px 6px 14px" }}>
@@ -630,10 +631,10 @@ export default function HomePage() {
                 <div>
                   <div style={{ position: "relative", width: "100%", height: "120px", overflow: "hidden", background: "#f1f5f9" }}>
                     <img
-                      src={dorm.images && dorm.images[0] ? dorm.images[0] : "/images/dorm-1.jpg"}
+                      src={getImageUrl(dorm.images && dorm.images[0] ? dorm.images[0] : "images/dorm-1.jpg")}
                       alt={dorm.name}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      onError={(e) => { e.target.src = "/images/banner.jpg"; }}
+                      onError={(e) => { e.target.src = getImageUrl("images/banner.jpg"); }}
                     />
                     <span
                       style={{

@@ -3,8 +3,21 @@
 -- คัดลอกสคริปต์นี้ไปวางใน Supabase Dashboard -> SQL Editor แล้วกด Run ได้เลยครับ!
 -- =========================================================================
 
+-- ลบตารางเก่า (หากมีอยู่) เพื่อป้องกันโครงสร้างชนกัน
+DROP TABLE IF EXISTS room_types CASCADE;
+DROP TABLE IF EXISTS locations CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS view_history CASCADE;
+DROP TABLE IF EXISTS messages CASCADE;
+DROP TABLE IF EXISTS favorites CASCADE;
+DROP TABLE IF EXISTS reviews CASCADE;
+DROP TABLE IF EXISTS bookings CASCADE;
+DROP TABLE IF EXISTS rooms CASCADE;
+DROP TABLE IF EXISTS dormitories CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 -- 1. ตารางผู้ใช้งาน (USERS)
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT,
@@ -20,7 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- 2. ตารางหอพัก (DORMITORIES)
-CREATE TABLE IF NOT EXISTS dormitories (
+CREATE TABLE dormitories (
   id TEXT PRIMARY KEY,
   owner_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   owner_name TEXT,
@@ -46,7 +59,7 @@ CREATE TABLE IF NOT EXISTS dormitories (
 );
 
 -- 3. ตารางห้องพัก (ROOMS)
-CREATE TABLE IF NOT EXISTS rooms (
+CREATE TABLE rooms (
   id TEXT PRIMARY KEY,
   dormitory_id TEXT REFERENCES dormitories(id) ON DELETE CASCADE,
   owner_id TEXT REFERENCES users(id) ON DELETE CASCADE,
@@ -59,7 +72,7 @@ CREATE TABLE IF NOT EXISTS rooms (
 );
 
 -- 4. ตารางการจอง (BOOKINGS)
-CREATE TABLE IF NOT EXISTS bookings (
+CREATE TABLE bookings (
   id TEXT PRIMARY KEY,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   user_email TEXT,
@@ -78,7 +91,7 @@ CREATE TABLE IF NOT EXISTS bookings (
 );
 
 -- 5. ตารางรีวิว (REVIEWS)
-CREATE TABLE IF NOT EXISTS reviews (
+CREATE TABLE reviews (
   id TEXT PRIMARY KEY,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   user_name TEXT,
@@ -97,7 +110,7 @@ CREATE TABLE IF NOT EXISTS reviews (
 );
 
 -- 6. ตารางรายการโปรด (FAVORITES)
-CREATE TABLE IF NOT EXISTS favorites (
+CREATE TABLE favorites (
   id TEXT PRIMARY KEY,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   dormitory_id TEXT REFERENCES dormitories(id) ON DELETE CASCADE,
@@ -106,7 +119,7 @@ CREATE TABLE IF NOT EXISTS favorites (
 );
 
 -- 7. ตารางข้อความแชท (MESSAGES)
-CREATE TABLE IF NOT EXISTS messages (
+CREATE TABLE messages (
   id TEXT PRIMARY KEY,
   sender_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   sender_name TEXT,
@@ -120,7 +133,7 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 
 -- 8. ตารางประวัติการดูหอพัก (VIEW_HISTORY)
-CREATE TABLE IF NOT EXISTS view_history (
+CREATE TABLE view_history (
   id TEXT PRIMARY KEY,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   dormitory_id TEXT REFERENCES dormitories(id) ON DELETE CASCADE,
@@ -129,7 +142,7 @@ CREATE TABLE IF NOT EXISTS view_history (
 );
 
 -- 9. ตารางการแจ้งเตือน (NOTIFICATIONS)
-CREATE TABLE IF NOT EXISTS notifications (
+CREATE TABLE notifications (
   id TEXT PRIMARY KEY,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -141,7 +154,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- 10. ตารางพื้นที่ / โซน (LOCATIONS)
-CREATE TABLE IF NOT EXISTS locations (
+CREATE TABLE locations (
   id TEXT PRIMARY KEY,
   name TEXT UNIQUE NOT NULL,
   description TEXT,
@@ -149,7 +162,7 @@ CREATE TABLE IF NOT EXISTS locations (
 );
 
 -- 11. ตารางประเภทห้อง / การเช่า (ROOM_TYPES)
-CREATE TABLE IF NOT EXISTS room_types (
+CREATE TABLE room_types (
   id TEXT PRIMARY KEY,
   name TEXT UNIQUE NOT NULL,
   category TEXT DEFAULT 'ทั่วไป',
@@ -160,6 +173,13 @@ CREATE TABLE IF NOT EXISTS room_types (
 -- =========================================================================
 -- SEED INITIAL SAMPLE DATA (ข้อมูลตัวอย่างเริ่มต้น)
 -- =========================================================================
+
+-- Seed Users First (Required for foreign key constraints)
+INSERT INTO users (id, email, full_name, first_name, last_name, phone, role) VALUES
+  ('owner_1', 'owner1@yooloei.com', 'สมชาย เจ้าของหอ', 'สมชาย', 'เจ้าของหอ', '081-234-5678', 'owner'),
+  ('owner_2', 'owner2@yooloei.com', 'สมหญิง เจ้าของหอ', 'สมหญิง', 'เจ้าของหอ', '085-111-2233', 'owner'),
+  ('user_1', 'user1@yooloei.com', 'ผู้ใช้งาน ทดสอบ', 'ผู้ใช้งาน', 'ทดสอบ', '089-999-9999', 'user')
+ON CONFLICT (id) DO NOTHING;
 
 -- Seed Locations
 INSERT INTO locations (id, name, description) VALUES

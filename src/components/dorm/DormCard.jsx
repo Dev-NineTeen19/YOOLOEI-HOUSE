@@ -40,9 +40,10 @@ export default function DormCard({ dorm }) {
     }
   };
 
-  const displayImage = (dorm.images && dorm.images.length > 0)
+  const rawImage = (dorm.images && dorm.images.length > 0)
     ? dorm.images[0]
     : "/images/dorm-1.jpg";
+  const displayImage = getImageUrl(rawImage);
 
   const priceText = dorm.priceMin && dorm.priceMax && dorm.priceMin !== dorm.priceMax
     ? `${Number(dorm.priceMin).toLocaleString()} - ${Number(dorm.priceMax).toLocaleString()} บาท/เดือน`
@@ -54,7 +55,7 @@ export default function DormCard({ dorm }) {
         <img
           src={displayImage}
           alt={dorm.name}
-          onError={(e) => { e.target.src = "/images/banner.jpg"; }}
+          onError={(e) => { e.target.src = getImageUrl("/images/banner.jpg"); }}
         />
 
         {/* Favorite Icon Button */}
