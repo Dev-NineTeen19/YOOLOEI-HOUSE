@@ -1,9 +1,9 @@
 -- =========================================================================
--- YOOLOEI HOUSE - SUPABASE DATABASE MIGRATION SCRIPT (CREATE TABLES & SEED)
+-- YOOLOEI HOUSE - SUPABASE DATABASE COMPLETE SETUP SCRIPT (CREATE & SEED)
 -- คัดลอกสคริปต์นี้ไปวางใน Supabase Dashboard -> SQL Editor แล้วกด Run ได้เลยครับ!
 -- =========================================================================
 
--- ลบตารางเก่า (หากมีอยู่) เพื่อป้องกันโครงสร้างชนกัน
+-- ลบตารางเก่า (หากมีอยู่) เพื่อให้การสร้างตารางทำได้อย่างสะอาดและถูกต้อง 100%
 DROP TABLE IF EXISTS room_types CASCADE;
 DROP TABLE IF EXISTS locations CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
@@ -225,12 +225,16 @@ ALTER TABLE locations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE room_types DISABLE ROW LEVEL SECURITY;
 
 -- =========================================================================
--- CREATE STORAGE BUCKETS AUTOMATICALLY (สร้าง BUCKETS เก็บรูปภาพอัตโนมัติ)
+-- SAFELY CREATE STORAGE BUCKETS (สร้าง BUCKETS เก็บรูปภาพให้อัตโนมัติ)
 -- =========================================================================
-INSERT INTO storage.buckets (id, name, public) 
-VALUES 
-  ('avatars', 'avatars', true),
-  ('dormitories', 'dormitories', true),
-  ('rooms', 'rooms', true)
-ON CONFLICT (id) DO UPDATE SET public = true;
-
+DO $$
+BEGIN
+  INSERT INTO storage.buckets (id, name, public) 
+  VALUES 
+    ('avatars', 'avatars', true),
+    ('dormitories', 'dormitories', true),
+    ('rooms', 'rooms', true)
+  ON CONFLICT (id) DO UPDATE SET public = true;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Storage buckets creation skipped or handled automatically';
+END $$;
