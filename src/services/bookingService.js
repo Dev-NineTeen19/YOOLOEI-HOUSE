@@ -1,4 +1,65 @@
-import { supabase } from "../supabase/config";
+import { api } from "./apiClient";
+
+// 1. สร้างคำขอจองห้องพัก (User ทำได้ตลอดเวลา)
+export async function createBooking(data) {
+  const res = await api.post("/bookings", {
+    dormitoryId: data.dormitoryId,
+    dormitoryName: data.dormitoryName,
+    ownerId: data.ownerId,
+    roomId: data.roomId || null,
+    roomNumber: data.roomNumber || "ห้องมาตรฐาน",
+    bookingDate: data.bookingDate,
+    note: data.note || "",
+    userName: data.userName,
+    userPhone: data.userPhone
+  });
+  return res.booking?.id;
+}
+
+// 2. ดึงประวัติการจองของผู้เช่า
+export async function getBookingsByUser(userId) {
+  try {
+    const res = await api.get("/bookings", { userId });
+    return (res.bookings || []).map(mapBookingFields);
+  } catch (error) {
+    console.error("Error fetching user bookings:", error);
+    return [];
+  }
+}
+
+// 3. ดึงคำขอจองของเจ้าของหอพัก
+export async function getBookingsByOwner(ownerId) {
+  try {
+    const res = await api.get("/bookings", { ownerId });
+    return (res.bookings || []).map(mapBookingFields);
+  } catch (error) {
+    console.error("Error fetching owner bookings:", error);
+    return [];
+  }
+}
+
+// 4. ดึงการจองทั้งหมด (Admin)
+export async function getAllBookingsAdmin() {
+  try {
+    const res = await api.get("/bookings");
+    return (res.bookings || []).map(mapBookingFields);
+  } catch (error) {
+    console.error("Error fetching all bookings:", error);
+    return [];
+  }
+}
+
+// 5. เจ้าของหอพักอนุมัติ / ปฏิเสธการจอง (ทำได้ตลอดเวลาโดยไม่ต้องผ่านแอดมิน!)
+export async function updateBookingStatus(bookingId, status) {
+  const res = await api.put(`/bookings/${bookingId}/status`, { status });
+  return res.booking;
+}
+
+// 6. ผู้เช่ายกเลิกการจอง
+export async function cancelBooking(bookingId) {
+  const res = await api.put(`/bookings/${bookingId}/status`, { status: "cancelled" });
+  return res.booking;
+}
 
 function mapBookingFields(b) {
   if (!b) return null;
@@ -10,108 +71,13 @@ function mapBookingFields(b) {
     userPhone: b.user_phone || b.userPhone,
     ownerId: b.owner_id || b.ownerId,
     dormitoryId: b.dormitory_id || b.dormitoryId,
-    dormitoryName: b.dormitory_name || b.dormitoryName || "หอพัก",
+    dormitoryName: b.dormitory_name || b.dormitoryName,
     roomId: b.room_id || b.roomId,
-    roomNumber: b.room_number || b.roomNumber || "ห้องมาตรฐาน",
+    roomNumber: b.room_number || b.roomNumber,
     bookingDate: b.booking_date || b.bookingDate,
-    note: b.note || "",
-    status: b.status || "pending",
+    note: b.note,
+    status: b.status,
     createdAt: b.created_at || b.createdAt,
     updatedAt: b.updated_at || b.updatedAt
   };
-}
-
-// 1. สร้างคำขอจองห้องพักใน Supabase
-export async function createBooking(data) {
-  const newId = `booking_${Date.now()}`;
-  const payload = {
-    id: newId,
-    user_id: data.userId || "",
-    user_name: data.userName,
-    user_phone: data.userPhone,
-    dormitory_id: data.dormitoryId,
-    dormitory_name: data.dormitoryName,
-    owner_id: data.ownerId,
-    room_id: data.roomId || null,
-    room_number: data.roomNumber || "ห้องมาตรฐาน",
-    booking_date: data.bookingDate,
-    note: data.note || "",
-    status: "pending",
-    created_at: new Date().toISOString()
-  };
-
-  const { data: created, error } = await supabase
-    .from("bookings")
-    .insert([payload])
-    .select();
-
-  if (error) console.error("createBooking Supabase error:", error);
-  return created?.[0]?.id || newId;
-}
-
-// 2. ดึงประวัติการจองของผู้เช่าจาก Supabase
-export async function getBookingsByUser(userId) {
-  try {
-    const { data, error } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error || !data) return [];
-    return data.map(mapBookingFields);
-  } catch (error) {
-    console.error("Error fetching user bookings from Supabase:", error);
-    return [];
-  }
-}
-
-// 3. ดึงคำขอจองของเจ้าของหอพักจาก Supabase
-export async function getBookingsByOwner(ownerId) {
-  try {
-    const { data, error } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("owner_id", ownerId)
-      .order("created_at", { ascending: false });
-
-    if (error || !data) return [];
-    return data.map(mapBookingFields);
-  } catch (error) {
-    console.error("Error fetching owner bookings from Supabase:", error);
-    return [];
-  }
-}
-
-// 4. ดึงการจองทั้งหมด (Admin) จาก Supabase
-export async function getAllBookingsAdmin() {
-  try {
-    const { data, error } = await supabase
-      .from("bookings")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error || !data) return [];
-    return data.map(mapBookingFields);
-  } catch (error) {
-    console.error("Error fetching all bookings for admin from Supabase:", error);
-    return [];
-  }
-}
-
-// 5. เจ้าของหอพักอนุมัติ / ปฏิเสธการจองใน Supabase
-export async function updateBookingStatus(bookingId, status) {
-  const { data: updated, error } = await supabase
-    .from("bookings")
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", bookingId)
-    .select();
-
-  if (error) console.error("updateBookingStatus Supabase error:", error);
-  return mapBookingFields(updated?.[0] || { id: bookingId, status });
-}
-
-// 6. ผู้เช่ายกเลิกการจองใน Supabase
-export async function cancelBooking(bookingId) {
-  return updateBookingStatus(bookingId, "cancelled");
 }

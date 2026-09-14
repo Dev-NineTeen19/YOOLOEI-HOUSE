@@ -1,4 +1,4 @@
-import { supabase } from "../supabase/config";
+import { api } from "./apiClient";
 
 const DEFAULT_ROOM_TYPES = [
   { id: "rt-1", name: "รายเดือน", category: "รูปแบบการเช่า", description: "เช่าระยะยาวรายเดือน" },
@@ -9,71 +9,84 @@ const DEFAULT_ROOM_TYPES = [
   { id: "rt-6", name: "ห้องชุด", category: "ประเภทห้อง", description: "ห้องชุดแบ่งสัดส่วนกว้างขวาง" }
 ];
 
-// 1. ดึงรายการประเภทห้องทั้งหมดจาก Supabase
-export async function getRoomTypes() {
+function getStoredRoomTypes() {
   try {
-    const { data, error } = await supabase
-      .from("room_types")
-      .select("*")
-      .order("name", { ascending: true });
-
-    if (error || !data || data.length === 0) {
-      return DEFAULT_ROOM_TYPES;
-    }
-    return data;
-  } catch (error) {
-    console.warn("Using default room types fallback:", error);
+    const raw = localStorage.getItem("yooloei_room_types");
+    return raw ? JSON.parse(raw) : DEFAULT_ROOM_TYPES;
+  } catch {
     return DEFAULT_ROOM_TYPES;
   }
 }
 
-// 2. แอดมินเพิ่มประเภทห้องใหม่ใน Supabase
+function setStoredRoomTypes(items) {
+  try {
+    localStorage.setItem("yooloei_room_types", JSON.stringify(items));
+  } catch (e) {
+    console.error("Failed to save room types to localStorage:", e);
+  }
+}
+
+// 1. ดึงรายการประเภทห้องทั้งหมด
+export async function getRoomTypes() {
+  try {
+    const res = await api.get("/room-types");
+    if (Array.isArray(res) && res.length > 0) {
+      setStoredRoomTypes(res);
+      return res;
+    }
+    return getStoredRoomTypes();
+  } catch (error) {
+    console.warn("Using local room types fallback:", error);
+    return getStoredRoomTypes();
+  }
+}
+
+// 2. แอดมินเพิ่มประเภทห้องใหม่
 export async function addRoomType(name, category = "ทั่วไป", description = "") {
   try {
-    const newId = `rt_${Date.now()}`;
-    const payload = { id: newId, name, category, description, created_at: new Date().toISOString() };
-    const { data, error } = await supabase
-      .from("room_types")
-      .insert([payload])
-      .select();
-
-    if (error) console.error("addRoomType Supabase error:", error);
-    return { success: true, roomType: data?.[0] || payload };
+    const res = await api.post("/admin/room-types", { name, category, description });
+    return res;
   } catch (error) {
-    console.error("Error adding room type in Supabase:", error);
-    throw error;
+    console.warn("API add room type failed, updating localStorage:", error);
+    const local = getStoredRoomTypes();
+    const newItem = {
+      id: `rt-${Date.now()}`,
+      name,
+      category,
+      description
+    };
+    const updated = [newItem, ...local];
+    setStoredRoomTypes(updated);
+    return { success: true, roomType: newItem };
   }
 }
 
-// 3. แอดมินแก้ไขประเภทห้องใน Supabase
+// 3. แอดมินแก้ไขประเภทห้อง
 export async function updateRoomType(id, name, category = "ทั่วไป", description = "") {
   try {
-    const { data, error } = await supabase
-      .from("room_types")
-      .update({ name, category, description, updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .select();
-
-    if (error) console.error("updateRoomType Supabase error:", error);
-    return { success: true, roomType: data?.[0] || { id, name, category, description } };
+    const res = await api.put(`/admin/room-types/${id}`, { name, category, description });
+    return res;
   } catch (error) {
-    console.error("Error updating room type in Supabase:", error);
-    throw error;
+    console.warn("API update room type failed, updating localStorage:", error);
+    const local = getStoredRoomTypes();
+    const updated = local.map((item) =>
+      item.id === id ? { ...item, name, category, description } : item
+    );
+    setStoredRoomTypes(updated);
+    return { success: true };
   }
 }
 
-// 4. แอดมินลบประเภทห้องใน Supabase
+// 4. แอดมินลบประเภทห้อง
 export async function deleteRoomType(id) {
   try {
-    const { error } = await supabase
-      .from("room_types")
-      .delete()
-      .eq("id", id);
-
-    if (error) console.error("deleteRoomType Supabase error:", error);
-    return { success: true };
+    const res = await api.delete(`/admin/room-types/${id}`);
+    return res;
   } catch (error) {
-    console.error("Error deleting room type in Supabase:", error);
-    throw error;
+    console.warn("API delete room type failed, updating localStorage:", error);
+    const local = getStoredRoomTypes();
+    const updated = local.filter((item) => item.id !== id);
+    setStoredRoomTypes(updated);
+    return { success: true };
   }
 }

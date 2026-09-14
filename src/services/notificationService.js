@@ -1,85 +1,48 @@
-import { supabase } from "../supabase/config";
-import { getCurrentUserFromStorage } from "./apiClient";
+import { api } from "./apiClient";
 
-// 1. ดึงรายการการแจ้งเตือนและจำนวนที่ยังไม่อ่านจาก Supabase
+// 1. ดึงรายการการแจ้งเตือนและจำนวนที่ยังไม่อ่าน
 export async function getNotifications() {
   try {
-    const user = getCurrentUserFromStorage();
-    const userId = user?.id;
-    if (!userId) return { notifications: [], unreadCount: 0 };
-
-    const { data, error } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error || !data) return { notifications: [], unreadCount: 0 };
-
-    const unreadCount = data.filter((n) => !n.is_read && !n.isRead).length;
-
+    const res = await api.get("/notifications");
     return {
-      notifications: data.map((n) => ({
-        id: n.id,
-        title: n.title,
-        message: n.message,
-        isRead: Boolean(n.is_read || n.isRead),
-        type: n.type || "info",
-        link: n.link || "",
-        createdAt: n.created_at || n.createdAt
-      })),
-      unreadCount
+      notifications: res.notifications || [],
+      unreadCount: res.unreadCount || 0
     };
   } catch (error) {
-    console.error("Error fetching notifications from Supabase:", error);
+    console.error("Error fetching notifications:", error);
     return { notifications: [], unreadCount: 0 };
   }
 }
 
-// 2. ทำเครื่องหมายอ่านแล้วทั้งหมดใน Supabase
+// 2. ทำเครื่องหมายอ่านแล้วทั้งหมด
 export async function markAllNotificationsAsRead() {
   try {
-    const user = getCurrentUserFromStorage();
-    if (!user?.id) return true;
-
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", user.id);
-
-    return true;
+    const res = await api.put("/notifications/read-all", {});
+    return res;
   } catch (error) {
-    console.error("Error marking all notifications as read in Supabase:", error);
-    return true;
+    console.error("Error marking all notifications as read:", error);
+    throw error;
   }
 }
 
-// 3. ทำเครื่องหมายอ่านแล้วเฉพาะรายการใน Supabase
+// 3. ทำเครื่องหมายอ่านแล้วเฉพาะรายการ
 export async function markNotificationAsRead(notificationId) {
   try {
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("id", notificationId);
-
-    return true;
+    const res = await api.put(`/notifications/${notificationId}/read`, {});
+    return res;
   } catch (error) {
-    console.error("Error marking notification as read in Supabase:", error);
-    return true;
+    console.error("Error marking notification as read:", error);
+    throw error;
   }
 }
 
-// 4. ลบรายการแจ้งเตือนใน Supabase
+// 4. ลบรายการแจ้งเตือน
 export async function deleteNotification(notificationId) {
   try {
-    await supabase
-      .from("notifications")
-      .delete()
-      .eq("id", notificationId);
-
-    return true;
+    const res = await api.delete(`/notifications/${notificationId}`);
+    return res;
   } catch (error) {
-    console.error("Error deleting notification in Supabase:", error);
-    return true;
+    console.error("Error deleting notification:", error);
+    throw error;
   }
 }

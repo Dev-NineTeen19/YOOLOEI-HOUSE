@@ -1,4 +1,66 @@
-import { supabase } from "../supabase/config";
+import { api } from "./apiClient";
+
+// 1. ดึงห้องพักตามหอพัก
+export async function getRoomsByDormitory(dormitoryId) {
+  try {
+    const res = await api.get(`/rooms/dormitory/${dormitoryId}`);
+    return (res.rooms || []).map(mapRoomFields);
+  } catch (error) {
+    console.error("Error fetching rooms by dormitory:", error);
+    return [];
+  }
+}
+
+// 2. ดึงห้องพักของ Owner
+export async function getRoomsByOwner(ownerId) {
+  try {
+    // ดึงห้องพักผ่านหอพักของเจ้าของ
+    const dormsRes = await api.get(`/dormitories/owner/${ownerId}`);
+    const dorms = dormsRes.dormitories || [];
+    let allRooms = [];
+    for (const d of dorms) {
+      const roomsRes = await api.get(`/rooms/dormitory/${d.id}`);
+      allRooms = allRooms.concat(roomsRes.rooms || []);
+    }
+    return allRooms.map(mapRoomFields);
+  } catch (error) {
+    console.error("Error fetching rooms by owner:", error);
+    return [];
+  }
+}
+
+// 3. เพิ่มห้องพัก (เจ้าของเพิ่มได้ตลอดเวลาโดยไม่ต้องผ่านแอดมิน!)
+export async function createRoom(data) {
+  const res = await api.post("/rooms", {
+    dormitoryId: data.dormitoryId,
+    roomNumber: data.roomNumber,
+    roomType: data.roomType,
+    price: Number(data.price) || 0,
+    status: data.status || "available"
+  });
+  return res.room?.id;
+}
+
+// 4. แก้ไขห้องพัก (เจ้าของแก้ไขได้ตลอดเวลาโดยไม่ต้องผ่านแอดมิน!)
+export async function updateRoom(roomId, data) {
+  const res = await api.put(`/rooms/${roomId}`, {
+    roomNumber: data.roomNumber,
+    roomType: data.roomType,
+    price: data.price !== undefined ? Number(data.price) : undefined,
+    status: data.status
+  });
+  return res.room;
+}
+
+// 5. ปรับสถานะห้องพัก (available / reserved / occupied)
+export async function updateRoomStatus(roomId, status) {
+  return updateRoom(roomId, { status });
+}
+
+// 6. ลบห้องพัก
+export async function deleteRoom(roomId) {
+  return await api.delete(`/rooms/${roomId}`);
+}
 
 function mapRoomFields(r) {
   if (!r) return null;
@@ -8,103 +70,8 @@ function mapRoomFields(r) {
     ownerId: r.owner_id || r.ownerId,
     roomNumber: r.room_number || r.roomNumber,
     roomType: r.room_type || r.roomType,
-    price: Number(r.price || 0),
-    status: r.status || "available",
+    price: r.price,
+    status: r.status,
     createdAt: r.created_at || r.createdAt
   };
-}
-
-// 1. ดึงห้องพักตามหอพักจาก Supabase
-export async function getRoomsByDormitory(dormitoryId) {
-  try {
-    const { data, error } = await supabase
-      .from("rooms")
-      .select("*")
-      .eq("dormitory_id", dormitoryId);
-
-    if (error || !data) return [];
-    return data.map(mapRoomFields);
-  } catch (error) {
-    console.error("Error fetching rooms by dormitory from Supabase:", error);
-    return [];
-  }
-}
-
-// 2. ดึงห้องพักของ Owner จาก Supabase
-export async function getRoomsByOwner(ownerId) {
-  try {
-    const { data, error } = await supabase
-      .from("rooms")
-      .select("*")
-      .eq("owner_id", ownerId);
-
-    if (error || !data) return [];
-    return data.map(mapRoomFields);
-  } catch (error) {
-    console.error("Error fetching rooms by owner from Supabase:", error);
-    return [];
-  }
-}
-
-// 3. เพิ่มห้องพักใหม่ใน Supabase
-export async function createRoom(data) {
-  const newId = `room_${Date.now()}`;
-  const payload = {
-    id: newId,
-    dormitory_id: data.dormitoryId,
-    owner_id: data.ownerId || "",
-    room_number: data.roomNumber,
-    room_type: data.roomType,
-    price: Number(data.price) || 0,
-    status: data.status || "available",
-    created_at: new Date().toISOString()
-  };
-
-  const { data: created, error } = await supabase
-    .from("rooms")
-    .insert([payload])
-    .select();
-
-  if (error) console.error("createRoom Supabase error:", error);
-  return created?.[0]?.id || newId;
-}
-
-// 4. แก้ไขห้องพักใน Supabase
-export async function updateRoom(roomId, data) {
-  const updatePayload = {
-    room_number: data.roomNumber,
-    room_type: data.roomType,
-    price: data.price !== undefined ? Number(data.price) : undefined,
-    status: data.status,
-    updated_at: new Date().toISOString()
-  };
-
-  Object.keys(updatePayload).forEach((k) => {
-    if (updatePayload[k] === undefined) delete updatePayload[k];
-  });
-
-  const { data: updated, error } = await supabase
-    .from("rooms")
-    .update(updatePayload)
-    .eq("id", roomId)
-    .select();
-
-  if (error) console.error("updateRoom Supabase error:", error);
-  return mapRoomFields(updated?.[0] || { id: roomId, ...data });
-}
-
-// 5. ปรับสถานะห้องพัก (available / reserved / occupied)
-export async function updateRoomStatus(roomId, status) {
-  return updateRoom(roomId, { status });
-}
-
-// 6. ลบห้องพักใน Supabase
-export async function deleteRoom(roomId) {
-  const { error } = await supabase
-    .from("rooms")
-    .delete()
-    .eq("id", roomId);
-
-  if (error) console.error("deleteRoom Supabase error:", error);
-  return true;
 }

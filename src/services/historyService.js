@@ -1,86 +1,45 @@
-import { supabase } from "../supabase/config";
-import { getCurrentUserFromStorage } from "./apiClient";
+import { api } from "./apiClient";
 
-// 1. บันทึกประวัติการดูหอพักใน Supabase
+// 1. บันทึกประวัติการดูหอพัก
 export async function recordDormView(dormitoryId) {
   try {
-    const user = getCurrentUserFromStorage();
-    if (!user?.id || !dormitoryId) return;
-
-    await supabase.from("view_history").upsert([
-      {
-        id: `vh_${user.id}_${dormitoryId}`,
-        user_id: user.id,
-        dormitory_id: dormitoryId,
-        viewed_at: new Date().toISOString()
-      }
-    ]);
+    if (!dormitoryId) return;
+    const res = await api.post("/history/view", { dormitoryId });
+    return res;
   } catch (error) {
-    console.error("Error recording view history in Supabase:", error);
+    console.error("Error recording view history:", error);
   }
 }
 
-// 2. ดึงประวัติการดูหอพักทั้งหมดของผู้ใช้จาก Supabase
+// 2. ดึงประวัติการดูหอพักทั้งหมดของผู้ใช้
 export async function getViewHistory() {
   try {
-    const user = getCurrentUserFromStorage();
-    if (!user?.id) return [];
-
-    const { data, error } = await supabase
-      .from("view_history")
-      .select("*, dormitories(*)")
-      .eq("user_id", user.id)
-      .order("viewed_at", { ascending: false });
-
-    if (error || !data) return [];
-    return data.map((item) => ({
-      id: item.dormitories?.id || item.dormitory_id,
-      dormitoryId: item.dormitories?.id || item.dormitory_id,
-      name: item.dormitories?.name || "หอพัก",
-      district: item.dormitories?.district || "เมืองเลย",
-      priceMin: Number(item.dormitories?.price_min || 3500),
-      images: Array.isArray(item.dormitories?.images) ? item.dormitories.images : ["/images/dorm-1.jpg"],
-      viewedAt: item.viewed_at
-    }));
+    const res = await api.get("/history/view");
+    return res.history || [];
   } catch (error) {
-    console.error("Error fetching view history from Supabase:", error);
+    console.error("Error fetching view history:", error);
     return [];
   }
 }
 
-// 3. ลบประวัติหอพักเฉพาะรายการใน Supabase
+// 3. ลบประวัติหอพักเฉพาะรายการ
 export async function removeViewHistory(dormitoryId) {
   try {
-    const user = getCurrentUserFromStorage();
-    if (!user?.id) return true;
-
-    await supabase
-      .from("view_history")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("dormitory_id", dormitoryId);
-
-    return true;
+    const res = await api.delete(`/history/view/${dormitoryId}`);
+    return res;
   } catch (error) {
-    console.error("Error removing view history item in Supabase:", error);
+    console.error("Error removing view history item:", error);
     throw error;
   }
 }
 
-// 4. ล้างประวัติการดูหอพักทั้งหมดใน Supabase
+// 4. ล้างประวัติการดูหอพักทั้งหมด
 export async function clearAllViewHistory() {
   try {
-    const user = getCurrentUserFromStorage();
-    if (!user?.id) return true;
-
-    await supabase
-      .from("view_history")
-      .delete()
-      .eq("user_id", user.id);
-
-    return true;
+    const res = await api.delete("/history/view");
+    return res;
   } catch (error) {
-    console.error("Error clearing all view history in Supabase:", error);
+    console.error("Error clearing all view history:", error);
     throw error;
   }
 }

@@ -1,62 +1,45 @@
-import { supabase } from "../supabase/config";
+import { api } from "./apiClient";
 
-// 1. ดึงผู้ใช้งานทั้งหมดในระบบ (Admin) จาก Supabase
+// 1. ดึงผู้ใช้งานทั้งหมดในระบบ (Admin)
 export async function getAllUsersAdmin() {
   try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error || !data) return [];
-
-    return data.map((u) => ({
+    const res = await api.get("/admin/users");
+    return (res.users || []).map((u) => ({
       id: u.id,
       email: u.email,
-      displayName: u.full_name || `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.username || u.email,
+      displayName: u.full_name,
       firstName: u.first_name,
       lastName: u.last_name,
       phone: u.phone,
       username: u.username,
-      role: u.role || "user",
-      avatarUrl: u.avatar_url || "/images/default-avatar.jpg",
+      role: u.role,
+      avatarUrl: u.avatar_url,
       createdAt: u.created_at
     }));
   } catch (error) {
-    console.error("Error fetching users for admin from Supabase:", error);
+    console.error("Error fetching users for admin:", error);
     return [];
   }
 }
 
-// 2. เปลี่ยน Role ของผู้ใช้ (Admin) ใน Supabase
+// 2. เปลี่ยน Role ของผู้ใช้ (Admin)
 export async function updateUserRole(uid, newRole) {
   try {
-    const { data, error } = await supabase
-      .from("users")
-      .update({ role: newRole, updated_at: new Date().toISOString() })
-      .eq("id", uid)
-      .select();
-
-    if (error) console.error("updateUserRole Supabase error:", error);
-    return data?.[0] || { id: uid, role: newRole };
+    const res = await api.put(`/admin/users/${uid}/role`, { role: newRole });
+    return res.user || { id: uid, role: newRole };
   } catch (error) {
-    console.error("Error updating user role in Supabase:", error);
+    console.error("Error updating user role:", error);
     throw error;
   }
 }
 
-// 3. ระงับ / ลบ บัญชีผู้ใช้ (Admin) ใน Supabase
+// 3. ระงับ / ลบ บัญชีผู้ใช้ (Admin)
 export async function deleteUserDoc(uid) {
   try {
-    const { error } = await supabase
-      .from("users")
-      .delete()
-      .eq("id", uid);
-
-    if (error) console.error("deleteUserDoc Supabase error:", error);
-    return true;
+    const res = await api.delete(`/admin/users/${uid}`);
+    return res;
   } catch (error) {
-    console.error("Error deleting user in Supabase:", error);
+    console.error("Error deleting user:", error);
     throw error;
   }
 }
